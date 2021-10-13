@@ -1,8 +1,9 @@
 use image::Rgba;
+use nalgebra::Point2;
 use obj::Obj;
-use nalgebra::{Point2};
 
 mod renderer;
+mod utilities;
 
 use renderer::Renderer;
 
@@ -31,16 +32,23 @@ fn main() {
                 let positions: Vec<_> = indices
                     .iter()
                     .map(|i| data.position[*i])
-                    .map(|p| Point2::<i32>::new(
-                        ((p[0] + 1.0) * ((WIDTH as f32) / 2.0)) as i32,
-                        ((p[1] + 1.0) * ((HEIGHT as f32) / 2.0)) as i32
-                    ))
+                    .map(|p| {
+                        Point2::<i32>::new(
+                            ((p[0] + 1.0) * ((WIDTH as f32) / 2.0)) as i32,
+                            ((p[1] + 1.0) * ((HEIGHT as f32) / 2.0)) as i32,
+                        )
+                    })
                     .collect();
 
                 //renderer.line(positions[0], positions[1], Rgba([0, 0, 0, 255]));
                 //renderer.line(positions[1], positions[2], Rgba([0, 0, 0, 255]));
                 //renderer.line(positions[2], positions[0], Rgba([0, 0, 0, 255]));
-                renderer.triangle(positions[0], positions[1], positions[2], Rgba([0, 0, 0, 255]));
+                renderer.triangle(
+                    positions[0],
+                    positions[1],
+                    positions[2],
+                    utilities::random_colour(),
+                );
             }
         }
     }

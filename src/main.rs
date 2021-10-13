@@ -1,10 +1,9 @@
 use image::Rgba;
 use obj::Obj;
+use nalgebra::{Point2};
 
-mod point;
 mod renderer;
 
-use point::Point;
 use renderer::Renderer;
 
 const WIDTH: u32 = 1000;
@@ -32,10 +31,10 @@ fn main() {
                 let positions: Vec<_> = indices
                     .iter()
                     .map(|i| data.position[*i])
-                    .map(|p| Point {
-                        x: (((p[0] + 1.0) * ((WIDTH as f32) / 2.0)) as i32),
-                        y: (((p[1] + 1.0) * ((HEIGHT as f32) / 2.0)) as i32),
-                    })
+                    .map(|p| Point2::<f32>::new(
+                        (p[0] + 1.0) * ((WIDTH as f32) / 2.0),
+                        (p[1] + 1.0) * ((HEIGHT as f32) / 2.0)
+                    ))
                     .collect();
 
                 renderer.line(positions[0], positions[1], Rgba([0, 0, 0, 255]));

@@ -1,4 +1,4 @@
-use crate::point::Point;
+use nalgebra::{Point2};
 use image::{Rgba, RgbaImage};
 
 pub struct Renderer {
@@ -36,11 +36,11 @@ impl Renderer {
     }
 
     ///
-    pub fn line(&mut self, p0: Point, p1: Point, colour: Rgba<u8>) {
-        let mut x0 = p0.x;
-        let mut y0 = p0.y;
-        let mut x1 = p1.x;
-        let mut y1 = p1.y;
+    pub fn line(&mut self, p0: Point2<f32>, p1: Point2<f32>, colour: Rgba<u8>) {
+        let mut x0 = p0.x as i32;
+        let mut y0 = p0.y as i32;
+        let mut x1 = p1.x as i32;
+        let mut y1 = p1.y as i32;
 
         let steep = (x0 - x1).abs() < (y0 - y1).abs();
 

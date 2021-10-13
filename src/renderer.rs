@@ -1,4 +1,6 @@
-use nalgebra::{Point2};
+
+use std::cmp;
+use nalgebra::{Point2, Vector2, Vector3};
 use image::{Rgba, RgbaImage};
 
 pub struct Renderer {
@@ -36,11 +38,11 @@ impl Renderer {
     }
 
     ///
-    pub fn line(&mut self, p0: Point2<f32>, p1: Point2<f32>, colour: Rgba<u8>) {
-        let mut x0 = p0.x as i32;
-        let mut y0 = p0.y as i32;
-        let mut x1 = p1.x as i32;
-        let mut y1 = p1.y as i32;
+    pub fn line(&mut self, p0: Point2<i32>, p1: Point2<i32>, colour: Rgba<u8>) {
+        let mut x0 = p0.x;
+        let mut y0 = p0.y;
+        let mut x1 = p1.x;
+        let mut y1 = p1.y;
 
         let steep = (x0 - x1).abs() < (y0 - y1).abs();
 
@@ -79,6 +81,45 @@ impl Renderer {
                 y += if y1 > y0 { 1 } else { -1 };
                 err -= 2 * dx;
             }
+        }
+    }
+
+    ///
+    pub fn triangle(&mut self, p0: Point2<i32>, p1: Point2<i32>, p2: Point2<i32>, colour: Rgba<u8>) {
+        let mut bb_min = Vector2::<i32>::new((self.width - 1) as i32, (self.height - 1) as i32);
+        let mut bb_max = Vector2::<i32>::new(0, 0);
+        let clamp = Vector2::<i32>::new(bb_min.x, bb_min.y);
+
+        for p in &[p0, p1, p2] {
+            bb_min.x = cmp::max(0, cmp::min(bb_min.x, p.x));
+            bb_min.y = cmp::max(0, cmp::min(bb_min.y, p.y));
+            bb_max.x = cmp::min(clamp.x, cmp::max(bb_max.x, p.x));
+            bb_max.y = cmp::min(clamp.y, cmp::max(bb_max.y, p.y));
+        }
+
+        for x in bb_min.x..=bb_max.x {
+            for y in bb_min.y..=bb_max.y {
+                let p = Point2::<i32>::new(x, y);
+                if let Some(b) = Renderer::barycentric(p0, p1, p2, p) {
+                    if (b.x > 0.0) && (b.y > 0.0) && (b.z > 0.0) {
+                        self.buffer.put_pixel(x as u32, y as u32, colour);
+                    }
+                }
+            }
+        }
+    }
+
+    ///
+    fn barycentric(p0: Point2<i32>, p1: Point2<i32>, p2: Point2<i32>, p: Point2<i32>) -> Option<Vector3<f32>> {
+        let a = Vector3::<f32>::new((p2.x - p0.x) as f32, (p1.x - p0.x) as f32, (p0.x - p.x) as f32);
+        let b = Vector3::<f32>::new((p2.y - p0.y) as f32, (p1.y - p0.y) as f32, (p0.y - p.y) as f32);
+        let u = a.cross(&b);
+
+        if u.z.abs() < 1.0 {
+            None
+        } else {
+            let v = Vector3::<f32>::new(1.0 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
+            Some(v)
         }
     }
 }

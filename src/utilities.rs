@@ -20,6 +20,11 @@ pub fn clamp_f32(t: f32, min: f32, max: f32) -> f32 {
 }
 
 ///
+pub fn sigmoid(value: f32) -> f32 {
+    1.0 / (1.0 + (-value).exp())
+}
+
+///
 pub fn barycentric(
     p0: Point3<f32>,
     p1: Point3<f32>,

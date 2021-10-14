@@ -142,10 +142,9 @@ impl Renderer {
                         // Calculate the depth
                         let u = x as u32;
                         let v = y as u32;
-                        let depth = (p0.z * b.x) + (p1.z * b.y) + (p2.z * b.z);
+                        let depth = utilities::sigmoid((p0.z * b.x) + (p1.z * b.y) + (p2.z * b.z));
 
-                        // Skip if deeper pixel drawn on top
-                        if self.depth_buffer.get_pixel(u, v)[0] < depth {
+                        if depth > self.depth_buffer.get_pixel(u, v)[0] {
                             self.colour_buffer.put_pixel(u, v, colour);
                             self.depth_buffer.put_pixel(u, v, Luma([depth]));
                         }

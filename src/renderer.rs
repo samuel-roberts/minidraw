@@ -1,4 +1,4 @@
-use image::{Pixel, Rgba, RgbaImage, Luma, ImageBuffer};
+use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
 use nalgebra::{Point2, Point3, Vector2, Vector3};
 use std::cmp;
 
@@ -10,7 +10,7 @@ pub struct Renderer {
     width: u32,
     height: u32,
     colour_buffer: RgbaImage,
-    depth_buffer: DepthImage
+    depth_buffer: DepthImage,
 }
 
 impl Renderer {
@@ -20,7 +20,7 @@ impl Renderer {
             width: width,
             height: height,
             colour_buffer: RgbaImage::new(width, height),
-            depth_buffer: DepthImage::from_pixel(width, height, Luma([-1.0]))
+            depth_buffer: DepthImage::from_pixel(width, height, Luma([-1.0])),
         }
     }
 
@@ -133,12 +133,10 @@ impl Renderer {
         // Render
         for x in bb_min.x..=bb_max.x {
             for y in bb_min.y..=bb_max.y {
-
                 // Find the barycentric coordinates of this pixel
                 let p = Point3::<f32>::new(x as f32, y as f32, 0.0);
                 if let Some(b) = utilities::barycentric(p0, p1, p2, p) {
                     if (b.x > 0.0) && (b.y > 0.0) && (b.z > 0.0) && (lighting_intensity > 0.0) {
-                        
                         // Calculate the depth
                         let u = x as u32;
                         let v = y as u32;
@@ -159,7 +157,7 @@ impl Renderer {
         Point3::<f32>::new(
             (p.x + 1.0) * ((self.get_width() as f32) / 2.0),
             self.get_height() as f32 - ((p.y + 1.0) * ((self.get_height() as f32) / 2.0)),
-            p.z
+            p.z,
         )
     }
 }

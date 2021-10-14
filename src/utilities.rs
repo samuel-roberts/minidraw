@@ -29,6 +29,7 @@ pub fn barycentric(
     }
 }
 
+///
 pub fn random_colour() -> Rgba<u8> {
     let mut rng = rand::thread_rng();
     let r = rng.gen_range(0..=255);

@@ -4,11 +4,13 @@ use rand::Rng;
 use std::cmp;
 
 ///
+#[inline]
 pub fn clamp<T: cmp::Ord>(t: T, min: T, max: T) -> T {
     cmp::min(max, cmp::max(min, t))
 }
 
 ///
+#[inline]
 pub fn clamp_f32(t: f32, min: f32, max: f32) -> f32 {
     if t < min {
         min
@@ -20,6 +22,7 @@ pub fn clamp_f32(t: f32, min: f32, max: f32) -> f32 {
 }
 
 ///
+#[inline]
 pub fn sigmoid(value: f32) -> f32 {
     1.0 / (1.0 + (-value).exp())
 }

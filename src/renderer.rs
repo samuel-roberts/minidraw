@@ -1,5 +1,5 @@
 use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
-use nalgebra::{Point2, Point3, Vector2, Vector3};
+use nalgebra::{Matrix4, Point2, Point3, Vector2, Vector3};
 use std::cmp;
 
 use crate::utilities;
@@ -11,6 +11,12 @@ pub struct Renderer {
     height: u32,
     colour_buffer: RgbaImage,
     depth_buffer: DepthImage,
+    model_matrices: Vec<Matrix4<f32>>,
+    view_matrices: Vec<Matrix4<f32>>,
+    projection_matrices: Vec<Matrix4<f32>>,
+    model_view_projection_matrix: Matrix4<f32>,
+    camera_direction: Vector3<f32>,
+    identity_matrix: Matrix4<f32>, // TODO Find a better way of doing this...
 }
 
 impl Renderer {
@@ -21,6 +27,12 @@ impl Renderer {
             height: height,
             colour_buffer: RgbaImage::new(width, height),
             depth_buffer: DepthImage::from_pixel(width, height, Luma([-1.0])),
+            model_matrices: Vec::<Matrix4<f32>>::new(),
+            view_matrices: Vec::<Matrix4<f32>>::new(),
+            projection_matrices: Vec::<Matrix4<f32>>::new(),
+            model_view_projection_matrix: Matrix4::<f32>::identity(),
+            camera_direction: *Vector3::<f32>::z_axis(),
+            identity_matrix: Matrix4::<f32>::identity(),
         }
     }
 
@@ -40,6 +52,59 @@ impl Renderer {
             Ok(_) => Ok(()),
             Err(_) => Err("Failed to save image"),
         }
+    }
+
+    ///
+    pub fn get_model_matrix(&self) -> &Matrix4<f32> {
+        self.model_matrices.last().unwrap_or(&self.identity_matrix)
+    }
+
+    ///
+    pub fn get_view_matrix(&self) -> &Matrix4<f32> {
+        self.view_matrices.last().unwrap_or(&self.identity_matrix)
+    }
+
+    ///
+    pub fn get_projection_matrix(&self) -> &Matrix4<f32> {
+        self.projection_matrices
+            .last()
+            .unwrap_or(&self.identity_matrix)
+    }
+
+    ///
+    pub fn push_model_matrix(&mut self, mat: Matrix4<f32>) {
+        self.model_matrices.push(mat);
+        self.update_camera();
+    }
+
+    ///
+    pub fn push_view_matrix(&mut self, mat: Matrix4<f32>) {
+        self.view_matrices.push(mat);
+        self.update_camera();
+    }
+
+    ///
+    pub fn push_projection_matrix(&mut self, mat: Matrix4<f32>) {
+        self.projection_matrices.push(mat);
+        self.update_camera();
+    }
+
+    ///
+    pub fn pop_model_matrix(&mut self) {
+        self.model_matrices.pop();
+        self.update_camera();
+    }
+
+    ///
+    pub fn pop_view_matrix(&mut self) {
+        self.view_matrices.pop();
+        self.update_camera();
+    }
+
+    ///
+    pub fn pop_projection_matrix(&mut self) {
+        self.projection_matrices.pop();
+        self.update_camera();
     }
 
     ///
@@ -100,6 +165,12 @@ impl Renderer {
         // Get triangle normal
         let normal = (p2 - p0).cross(&(p1 - p0)).normalize();
 
+        // Calculate triangle visibility
+        let visibility = -self.camera_direction.dot(&normal);
+        if visibility < 0.0 {
+            return;
+        }
+
         // Convert to screen-space
         let p0 = self.to_screen(p0);
         let p1 = self.to_screen(p1);
@@ -117,14 +188,13 @@ impl Renderer {
             bb_max.y = cmp::min(clamp.y, cmp::max(bb_max.y, p.y as i32));
         }
 
-        // Calculate facet lighting
-        let light_direction = Vector3::<f32>::new(0.0, 0.0, -1.0);
-        let lighting_intensity = normal.dot(&light_direction);
-        if lighting_intensity < 0.0 {
-            // TODO Replace this check with one for the camera direction (detect back faces)
+        if (bb_max.x == bb_min.x) || (bb_max.y == bb_min.y) {
             return;
         }
 
+        // Calculate facet lighting
+        let light_direction = Vector3::<f32>::new(-1.0, -0.5, -0.25).normalize();
+        let lighting_intensity = normal.dot(&light_direction);
         let colour = colour.map_with_alpha(
             |c| utilities::clamp_f32((c as f32) * lighting_intensity, 0.0, 255.0) as u8,
             |a| a,
@@ -136,11 +206,13 @@ impl Renderer {
                 // Find the barycentric coordinates of this pixel
                 let p = Point3::<f32>::new(x as f32, y as f32, 0.0);
                 if let Some(b) = utilities::barycentric(p0, p1, p2, p) {
-                    if (b.x > 0.0) && (b.y > 0.0) && (b.z > 0.0) && (lighting_intensity > 0.0) {
+                    if (b.x > 0.0) && (b.y > 0.0) && (b.z > 0.0) {
                         // Calculate the depth
+                        let depth = utilities::sigmoid((p0.z * b.x) + (p1.z * b.y) + (p2.z * b.z));
+                        
+                        // Set pixel
                         let u = x as u32;
                         let v = y as u32;
-                        let depth = utilities::sigmoid((p0.z * b.x) + (p1.z * b.y) + (p2.z * b.z));
 
                         if depth > self.depth_buffer.get_pixel(u, v)[0] {
                             self.colour_buffer.put_pixel(u, v, colour);
@@ -152,12 +224,25 @@ impl Renderer {
         }
     }
 
+    ///
+    fn update_camera(&mut self) {
+        self.model_view_projection_matrix =
+            self.get_projection_matrix() * self.get_view_matrix() * self.get_model_matrix();
+
+        self.camera_direction = -self
+            .get_view_matrix()
+            .try_inverse()
+            .unwrap()
+            .transform_vector(&Vector3::<f32>::z_axis());
+    }
+
     /// Convert from World to Screen coordinate system
     fn to_screen(&self, p: Point3<f32>) -> Point3<f32> {
+        let transformed = self.model_view_projection_matrix.transform_point(&p);
         Point3::<f32>::new(
-            (p.x + 1.0) * ((self.get_width() as f32) / 2.0),
-            self.get_height() as f32 - ((p.y + 1.0) * ((self.get_height() as f32) / 2.0)),
-            p.z,
+            ((transformed.x + 1.0) / 2.0) * (self.get_width() as f32),
+            ((transformed.y + 1.0) / 2.0) * (self.get_height() as f32),
+            transformed.z,
         )
     }
 }

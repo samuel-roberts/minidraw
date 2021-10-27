@@ -2,7 +2,7 @@ use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
 use nalgebra::{ComplexField, Matrix4, Point2, Point3, Vector2, Vector3};
 use std::cmp;
 
-use crate::utilities;
+use crate::{drawable::Drawable, utilities};
 
 type DepthImage = ImageBuffer<Luma<f32>, Vec<f32>>;
 
@@ -44,6 +44,11 @@ impl Renderer {
     ///
     pub fn get_height(&self) -> u32 {
         self.height
+    }
+
+    ///
+    pub fn get_colour_buffer_raw(&self) -> &Vec<u8> {
+        self.colour_buffer.as_raw()
     }
 
     ///
@@ -105,6 +110,17 @@ impl Renderer {
     pub fn pop_projection_matrix(&mut self) {
         self.projection_matrices.pop();
         self.update_camera();
+    }
+
+    ///
+    pub fn clear(&mut self, colour: Rgba<u8>) {
+        self.colour_buffer = RgbaImage::from_pixel(self.width, self.height, colour);
+        self.depth_buffer = DepthImage::from_pixel(self.width, self.height, Luma([-1.0]));
+    }
+
+    ///
+    pub fn draw<T: Drawable>(&mut self, drawable: &T) {
+        drawable.draw(self);
     }
 
     ///

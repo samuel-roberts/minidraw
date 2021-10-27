@@ -71,6 +71,17 @@ impl Drawable for Mesh {
         }
         renderer.pop_model_matrix();
     }
+
+    ///
+    fn draw_wireframe(&self, renderer: &mut Renderer) {
+        renderer.push_model_matrix(self.transform);
+        for triangle in &self.geometry {
+            renderer.line(triangle.a, triangle.b, triangle.colour);
+            renderer.line(triangle.b, triangle.c, triangle.colour);
+            renderer.line(triangle.c, triangle.a, triangle.colour);
+        }
+        renderer.pop_model_matrix();
+    }
 }
 
 impl Transformable for Mesh {

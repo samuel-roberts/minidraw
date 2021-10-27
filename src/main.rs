@@ -1,10 +1,13 @@
 
+#![allow(dead_code)]
+
 use std::time::{Duration, Instant};
 use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
 use nalgebra::{Matrix4, Point3, Vector3};
 use minifb::{Key, Window, WindowOptions};
 
 mod renderer;
+mod renderer_config;
 mod utilities;
 mod mesh;
 mod drawable;
@@ -13,14 +16,15 @@ mod transformable;
 use renderer::Renderer;
 use mesh::Mesh;
 
-use crate::transformable::Transformable;
+use crate::{renderer_config::RendererConfig, transformable::Transformable};
 
 const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 720;
 
 fn main() {
     // Init renderer
-    let mut renderer = Renderer::new(WIDTH, HEIGHT);
+    let config = RendererConfig::default();
+    let mut renderer = Renderer::new(WIDTH, HEIGHT, config);
 
     let view = Matrix4::<f32>::look_at_lh(
         &Point3::<f32>::new(25.0, 25.0, 25.0),
@@ -57,7 +61,7 @@ fn main() {
     while window.is_open() && !window.is_key_down(Key::Escape) {
         
         // Draw
-        renderer.clear(Rgba([0, 0, 0, 255]));
+        renderer.clear();
         renderer.draw(&mesh);
 
         // Adapt to frame buffer

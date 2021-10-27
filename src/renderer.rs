@@ -2,13 +2,14 @@ use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
 use nalgebra::{ComplexField, Matrix4, Point2, Point3, Vector2, Vector3};
 use std::cmp;
 
-use crate::{drawable::Drawable, utilities};
+use crate::{drawable::Drawable, renderer_config::RendererConfig, utilities};
 
 type DepthImage = ImageBuffer<Luma<f32>, Vec<f32>>;
 
 pub struct Renderer {
     width: u32,
     height: u32,
+    config: RendererConfig,
     colour_buffer: RgbaImage,
     depth_buffer: DepthImage,
     model_matrices: Vec<Matrix4<f32>>,
@@ -21,10 +22,11 @@ pub struct Renderer {
 
 impl Renderer {
     ///
-    pub fn new(width: u32, height: u32) -> Renderer {
+    pub fn new(width: u32, height: u32, config: RendererConfig) -> Renderer {
         Renderer {
             width: width,
             height: height,
+            config: config,
             colour_buffer: RgbaImage::new(width, height),
             depth_buffer: DepthImage::from_pixel(width, height, Luma([-1.0])),
             model_matrices: Vec::<Matrix4<f32>>::new(),
@@ -113,22 +115,30 @@ impl Renderer {
     }
 
     ///
-    pub fn clear(&mut self, colour: Rgba<u8>) {
-        self.colour_buffer = RgbaImage::from_pixel(self.width, self.height, colour);
+    pub fn clear(&mut self) {
+        self.colour_buffer = RgbaImage::from_pixel(self.width, self.height, self.config.clear_colour);
         self.depth_buffer = DepthImage::from_pixel(self.width, self.height, Luma([-1.0]));
     }
 
     ///
     pub fn draw<T: Drawable>(&mut self, drawable: &T) {
-        drawable.draw(self);
+        if self.config.wireframe {
+            drawable.draw_wireframe(self);
+        } else {
+            drawable.draw(self);
+        }
     }
 
     ///
-    pub fn line(&mut self, p0: Point2<i32>, p1: Point2<i32>, colour: Rgba<u8>) {
-        let mut x0 = p0.x;
-        let mut y0 = p0.y;
-        let mut x1 = p1.x;
-        let mut y1 = p1.y;
+    pub fn line(&mut self, p0: Point3<f32>, p1: Point3<f32>, colour: Rgba<u8>) {
+        // Convert to screen-space
+        let p0 = self.to_screen(p0);
+        let p1 = self.to_screen(p1);
+
+        let mut x0 = p0.x as i32;
+        let mut y0 = p0.y as i32;
+        let mut x1 = p1.x as i32;
+        let mut y1 = p1.y as i32;
 
         let steep = (x0 - x1).abs() < (y0 - y1).abs();
 

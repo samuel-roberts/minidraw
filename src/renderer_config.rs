@@ -1,9 +1,8 @@
-
 use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
 
 pub struct RendererConfig {
     pub wireframe: bool,
-    pub clear_colour: Rgba<u8>
+    pub clear_colour: Rgba<u8>,
 }
 
 impl RendererConfig {
@@ -11,7 +10,7 @@ impl RendererConfig {
     pub fn default() -> RendererConfig {
         RendererConfig {
             wireframe: false,
-            clear_colour: Rgba([0, 0, 0, 255])
+            clear_colour: Rgba([0, 0, 0, 255]),
         }
     }
 

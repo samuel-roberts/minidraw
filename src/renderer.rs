@@ -116,7 +116,8 @@ impl Renderer {
 
     ///
     pub fn clear(&mut self) {
-        self.colour_buffer = RgbaImage::from_pixel(self.width, self.height, self.config.clear_colour);
+        self.colour_buffer =
+            RgbaImage::from_pixel(self.width, self.height, self.config.clear_colour);
         self.depth_buffer = DepthImage::from_pixel(self.width, self.height, Luma([-1.0]));
     }
 
@@ -235,7 +236,7 @@ impl Renderer {
                     if (b.x > 0.0) && (b.y > 0.0) && (b.z > 0.0) {
                         // Calculate the depth
                         let depth = utilities::sigmoid((p0.z * b.x) + (p1.z * b.y) + (p2.z * b.z));
-                        
+
                         // Set pixel
                         let u = x as u32;
                         let v = y as u32;

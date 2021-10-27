@@ -1,20 +1,19 @@
-
 #![allow(dead_code)]
 
-use std::time::{Duration, Instant};
 use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
-use nalgebra::{Matrix4, Point3, Vector3};
 use minifb::{Key, Window, WindowOptions};
+use nalgebra::{Matrix4, Point3, Vector3};
+use std::time::{Duration, Instant};
 
+mod drawable;
+mod mesh;
 mod renderer;
 mod renderer_config;
-mod utilities;
-mod mesh;
-mod drawable;
 mod transformable;
+mod utilities;
 
-use renderer::Renderer;
 use mesh::Mesh;
+use renderer::Renderer;
 
 use crate::{renderer_config::RendererConfig, transformable::Transformable};
 
@@ -50,16 +49,16 @@ fn main() {
         WIDTH as usize,
         HEIGHT as usize,
         WindowOptions::default(),
-    ).expect("Failed to create window");
+    )
+    .expect("Failed to create window");
 
     // Limit to max ~60 fps update rate
     //window.limit_update_rate(Some(std::time::Duration::from_micros(16600)));
 
     let mut buffer: Vec<u32> = vec![0; (WIDTH * HEIGHT) as usize];
     let mut frame_timer = Instant::now();
-    
+
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        
         // Draw
         renderer.clear();
         renderer.draw(&mesh);
@@ -76,7 +75,7 @@ fn main() {
                 let g = src[offset_src + 1] as u32;
                 let b = src[offset_src + 2] as u32;
                 let a = src[offset_src + 3] as u32;
-                
+
                 dst[offset_dst] = (a << 24) + (r << 16) + (g << 8) + b;
             }
         }
@@ -89,9 +88,11 @@ fn main() {
         } else if window.is_key_down(Key::Left) {
             mesh.rotate(0.0, 0.0, -0.1);
         }
-        
+
         // Display
-        window.update_with_buffer(&buffer, WIDTH as usize, HEIGHT as usize).unwrap();
+        window
+            .update_with_buffer(&buffer, WIDTH as usize, HEIGHT as usize)
+            .unwrap();
 
         // Update frames per second
         let framerate = 1.0 / frame_timer.elapsed().as_secs_f32();

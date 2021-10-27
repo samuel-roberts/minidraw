@@ -1,5 +1,5 @@
 use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
-use nalgebra::{Matrix4, Point2, Point3, Vector2, Vector3};
+use nalgebra::{ComplexField, Matrix4, Point2, Point3, Vector2, Vector3};
 use std::cmp;
 
 use crate::utilities;
@@ -182,10 +182,10 @@ impl Renderer {
         let clamp = Vector2::<i32>::new(bb_min.x, bb_min.y);
 
         for p in &[p0, p1, p2] {
-            bb_min.x = cmp::max(0, cmp::min(bb_min.x, p.x as i32));
-            bb_min.y = cmp::max(0, cmp::min(bb_min.y, p.y as i32));
-            bb_max.x = cmp::min(clamp.x, cmp::max(bb_max.x, p.x as i32));
-            bb_max.y = cmp::min(clamp.y, cmp::max(bb_max.y, p.y as i32));
+            bb_min.x = cmp::max(0, cmp::min(bb_min.x, p.x.floor() as i32));
+            bb_min.y = cmp::max(0, cmp::min(bb_min.y, p.y.floor() as i32));
+            bb_max.x = cmp::min(clamp.x, cmp::max(bb_max.x, p.x.ceil() as i32));
+            bb_max.y = cmp::min(clamp.y, cmp::max(bb_max.y, p.y.ceil() as i32));
         }
 
         if (bb_max.x == bb_min.x) || (bb_max.y == bb_min.y) {

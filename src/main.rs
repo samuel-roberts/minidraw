@@ -1,3 +1,5 @@
+
+use std::time::{Duration, Instant};
 use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
 use nalgebra::{Matrix4, Point3, Vector3};
 use minifb::{Key, Window, WindowOptions};
@@ -6,9 +8,12 @@ mod renderer;
 mod utilities;
 mod mesh;
 mod drawable;
+mod transformable;
 
 use renderer::Renderer;
 use mesh::Mesh;
+
+use crate::transformable::Transformable;
 
 const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 720;
@@ -33,7 +38,7 @@ fn main() {
     renderer.push_projection_matrix(projection);
 
     // Load mesh
-    let mesh = Mesh::load_obj("models/calibration.obj").expect("Failed to load model");
+    let mut mesh = Mesh::load_obj("models/calibration.obj").expect("Failed to load model");
 
     // Init window
     let mut window = Window::new(
@@ -47,6 +52,8 @@ fn main() {
     //window.limit_update_rate(Some(std::time::Duration::from_micros(16600)));
 
     let mut buffer: Vec<u32> = vec![0; (WIDTH * HEIGHT) as usize];
+    let mut frame_timer = Instant::now();
+    
     while window.is_open() && !window.is_key_down(Key::Escape) {
         
         // Draw
@@ -73,9 +80,18 @@ fn main() {
         // Save if S key is pressed
         if window.is_key_released(Key::S) {
             renderer.save("output.png").unwrap();
+        } else if window.is_key_down(Key::Right) {
+            mesh.rotate(0.0, 0.0, 0.1);
+        } else if window.is_key_down(Key::Left) {
+            mesh.rotate(0.0, 0.0, -0.1);
         }
         
         // Display
         window.update_with_buffer(&buffer, WIDTH as usize, HEIGHT as usize).unwrap();
+
+        // Update frames per second
+        let framerate = 1.0 / frame_timer.elapsed().as_secs_f32();
+        frame_timer = Instant::now();
+        window.set_title(&format!("Minidraw ({:.2}fps)", framerate));
     }
 }

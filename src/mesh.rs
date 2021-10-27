@@ -5,6 +5,7 @@ use obj::Obj;
 
 use crate::drawable::Drawable;
 use crate::renderer::Renderer;
+use crate::transformable::Transformable;
 
 struct Triangle {
     a: Point3<f32>,
@@ -62,11 +63,32 @@ impl Mesh {
 }
 
 impl Drawable for Mesh {
+    ///
     fn draw(&self, renderer: &mut Renderer) {
         renderer.push_model_matrix(self.transform);
         for triangle in &self.geometry {
             renderer.triangle(triangle.a, triangle.b, triangle.c, triangle.colour);
         }
         renderer.pop_model_matrix();
+    }
+}
+
+impl Transformable for Mesh {
+    ///
+    fn translate(&mut self, delta: Vector3<f32>) {
+        todo!()
+    }
+
+    ///
+    fn rotate(&mut self, x: f32, y: f32, z: f32) {
+        let rot_x = Vector3::x() * x;
+        let rot_y = Vector3::y() * y;
+        let rot_z = Vector3::z() * z;
+        self.transform *= Matrix4::<f32>::new_rotation(rot_x + rot_y + rot_z);
+    }
+
+    ///
+    fn scale(&mut self, factor: f32) {
+        todo!()
     }
 }

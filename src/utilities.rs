@@ -1,5 +1,5 @@
 use image::Rgba;
-use nalgebra::{Point3, Vector3};
+use nalgebra::{Point3, Vector2, Vector3};
 use rand::Rng;
 use std::cmp;
 
@@ -33,25 +33,24 @@ pub fn barycentric(
     p1: Point3<f32>,
     p2: Point3<f32>,
     p: Point3<f32>,
-) -> Option<Vector3<f32>> {
-    let a = Vector3::<f32>::new(
-        (p2.x - p0.x) as f32,
-        (p1.x - p0.x) as f32,
-        (p0.x - p.x) as f32,
-    );
-    let b = Vector3::<f32>::new(
-        (p2.y - p0.y) as f32,
-        (p1.y - p0.y) as f32,
-        (p0.y - p.y) as f32,
-    );
-    let u = a.cross(&b);
+) -> Vector3<f32> {
 
-    if u.z.abs() < 1.0 {
-        None
-    } else {
-        let v = Vector3::<f32>::new(1.0 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
-        Some(v)
-    }
+    let v0 = p1 - p0;
+    let v1 = p2 - p0;
+    let v2 = p - p0;
+    
+    let d00 = v0.dot(&v0);
+    let d01 = v0.dot(&v1);
+    let d11 = v1.dot(&v1);
+    let d20 = v2.dot(&v0);
+    let d21 = v2.dot(&v1);
+    let denominator = (d00 * d11) - (d01 * d01);
+
+    let v = ((d11 * d20) - (d01 * d21)) / denominator;
+    let w = ((d00 * d21) - (d01 * d20)) / denominator;
+    let u = 1.0 - v - w;
+
+    Vector3::<f32>::new(u, v, w)
 }
 
 ///

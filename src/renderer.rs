@@ -231,21 +231,22 @@ impl Renderer {
         // Render
         for x in bb_min.x..=bb_max.x {
             for y in bb_min.y..=bb_max.y {
+                
                 // Find the barycentric coordinates of this pixel
                 let p = Point3::<f32>::new(x as f32, y as f32, 0.0);
-                if let Some(b) = utilities::barycentric(p0, p1, p2, p) {
-                    if (b.x > 0.0) && (b.y > 0.0) && (b.z > 0.0) {
-                        // Calculate the depth
-                        let depth = (p0.z * b.x) + (p1.z * b.y) + (p2.z * b.z);
+                let b = utilities::barycentric(p0, p1, p2, p);
 
-                        // Set pixel
-                        let u = x as u32;
-                        let v = y as u32;
+                if (b.x >= 0.0) && (b.y >= 0.0) && (b.z >= 0.0) && (b.x <= 1.0) && (b.y <= 1.0) && (b.z <= 1.0) {
+                    // Calculate the depth
+                    let depth = 1.0 / ((b.x / p0.z) + (b.y / p1.z) + (b.z / p2.z));
 
-                        if depth > self.depth_buffer.get_pixel(u, v)[0] {
-                            self.colour_buffer.put_pixel(u, v, colour);
-                            self.depth_buffer.put_pixel(u, v, Luma([depth]));
-                        }
+                    // Set pixel
+                    let u = x as u32;
+                    let v = y as u32;
+
+                    if depth > self.depth_buffer.get_pixel(u, v)[0] {
+                        self.colour_buffer.put_pixel(u, v, colour);
+                        self.depth_buffer.put_pixel(u, v, Luma([depth]));
                     }
                 }
             }

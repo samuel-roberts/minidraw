@@ -1,4 +1,4 @@
-use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
+use image::Rgba;
 
 pub struct RendererConfig {
     pub wireframe: bool,

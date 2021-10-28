@@ -1,5 +1,5 @@
 use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
-use nalgebra::{ComplexField, Matrix4, Point2, Point3, Vector2, Vector3};
+use nalgebra::{Matrix4, Point3, Vector2, Vector3};
 use std::cmp;
 
 use crate::{drawable::Drawable, renderer_config::RendererConfig, utilities};
@@ -190,7 +190,8 @@ impl Renderer {
         colour: Rgba<u8>,
     ) {
         // Get triangle normal
-        let normal = (p2 - p0).cross(&(p1 - p0)).normalize();
+        let n = (p2 - p0).cross(&(p1 - p0));
+        let normal = self.get_model_matrix().transform_vector(&n).normalize();
 
         // Calculate triangle visibility
         let visibility = -self.camera_direction.dot(&normal);

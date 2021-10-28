@@ -1,9 +1,8 @@
 #![allow(dead_code)]
 
-use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
 use minifb::{Key, Window, WindowOptions};
 use nalgebra::{Matrix4, Point3, Vector3};
-use std::time::{Duration, Instant};
+use std::time::{Instant};
 
 mod drawable;
 mod mesh;
@@ -21,6 +20,15 @@ const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 720;
 
 fn main() {
+    // Init window
+    let mut window = Window::new(
+        "Loading...",
+        WIDTH as usize,
+        HEIGHT as usize,
+        WindowOptions::default(),
+    )
+    .expect("Failed to create window");
+
     // Init renderer
     let config = RendererConfig::default();
     let mut renderer = Renderer::new(WIDTH, HEIGHT, config);
@@ -43,22 +51,16 @@ fn main() {
     // Load mesh
     let mut mesh = Mesh::load_obj("models/calibration.obj").expect("Failed to load model");
 
-    // Init window
-    let mut window = Window::new(
-        "Minidraw",
-        WIDTH as usize,
-        HEIGHT as usize,
-        WindowOptions::default(),
-    )
-    .expect("Failed to create window");
-
-    // Limit to max ~60 fps update rate
-    //window.limit_update_rate(Some(std::time::Duration::from_micros(16600)));
-
     let mut buffer: Vec<u32> = vec![0; (WIDTH * HEIGHT) as usize];
     let mut frame_timer = Instant::now();
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        // Update framesrate
+        let frame_duration = frame_timer.elapsed().as_secs_f32();
+        let frame_rate = 1.0 / frame_duration;
+        frame_timer = Instant::now();
+        window.set_title(&format!("Minidraw ({:.2}fps)", frame_rate));
+
         // Draw
         renderer.clear();
         renderer.draw(&mesh);
@@ -84,19 +86,14 @@ fn main() {
         if window.is_key_released(Key::S) {
             renderer.save("output.png").unwrap();
         } else if window.is_key_down(Key::Right) {
-            mesh.rotate(0.0, 0.0, 0.1);
+            mesh.rotate(0.0, 0.0, std::f32::consts::PI * frame_duration);
         } else if window.is_key_down(Key::Left) {
-            mesh.rotate(0.0, 0.0, -0.1);
+            mesh.rotate(0.0, 0.0, -std::f32::consts::PI * frame_duration);
         }
 
         // Display
         window
             .update_with_buffer(&buffer, WIDTH as usize, HEIGHT as usize)
             .unwrap();
-
-        // Update frames per second
-        let framerate = 1.0 / frame_timer.elapsed().as_secs_f32();
-        frame_timer = Instant::now();
-        window.set_title(&format!("Minidraw ({:.2}fps)", framerate));
     }
 }

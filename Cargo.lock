@@ -443,6 +443,7 @@ dependencies = [
  "nalgebra",
  "obj",
  "rand",
+ "rayon",
 ]
 
 [[package]]

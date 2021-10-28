@@ -3,15 +3,10 @@ use nalgebra::{Matrix4, Point3, Vector3};
 use obj::Obj;
 
 use crate::drawable::Drawable;
+use crate::mesh::triangle::Triangle;
+use crate::mesh::vertex::Vertex;
 use crate::renderer::Renderer;
 use crate::transformable::Transformable;
-
-struct Triangle {
-    a: Point3<f32>,
-    b: Point3<f32>,
-    c: Point3<f32>,
-    colour: Rgba<u8>,
-}
 
 pub struct Mesh {
     geometry: Vec<Triangle>,
@@ -44,9 +39,24 @@ impl Mesh {
                         .collect();
 
                     triangles.push(Triangle {
-                        a: positions[0],
-                        b: positions[1],
-                        c: positions[2],
+                        a: Vertex {
+                            position: positions[0],
+                            normal: None,
+                            uv: None,
+                            colour: None,
+                        },
+                        b: Vertex {
+                            position: positions[1],
+                            normal: None,
+                            uv: None,
+                            colour: None,
+                        },
+                        c: Vertex {
+                            position: positions[2],
+                            normal: None,
+                            uv: None,
+                            colour: None,
+                        },
                         colour: Rgba([255, 255, 255, 255]),
                     });
                 }
@@ -65,7 +75,12 @@ impl Drawable for Mesh {
     fn draw(&self, renderer: &mut Renderer) {
         renderer.push_model_matrix(self.transform);
         for triangle in &self.geometry {
-            renderer.triangle(triangle.a, triangle.b, triangle.c, triangle.colour);
+            renderer.triangle(
+                triangle.a.position,
+                triangle.b.position,
+                triangle.c.position,
+                triangle.colour,
+            );
         }
         renderer.pop_model_matrix();
     }
@@ -74,9 +89,9 @@ impl Drawable for Mesh {
     fn draw_wireframe(&self, renderer: &mut Renderer) {
         renderer.push_model_matrix(self.transform);
         for triangle in &self.geometry {
-            renderer.line(triangle.a, triangle.b, triangle.colour);
-            renderer.line(triangle.b, triangle.c, triangle.colour);
-            renderer.line(triangle.c, triangle.a, triangle.colour);
+            renderer.line(triangle.a.position, triangle.b.position, triangle.colour);
+            renderer.line(triangle.b.position, triangle.c.position, triangle.colour);
+            renderer.line(triangle.c.position, triangle.a.position, triangle.colour);
         }
         renderer.pop_model_matrix();
     }

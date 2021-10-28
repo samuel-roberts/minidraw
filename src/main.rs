@@ -2,7 +2,8 @@
 
 use minifb::{Key, Window, WindowOptions};
 use nalgebra::{Matrix4, Point3, Vector3};
-use std::time::{Instant};
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
+use std::time::Instant;
 
 mod drawable;
 mod mesh;
@@ -11,7 +12,7 @@ mod renderer_config;
 mod transformable;
 mod utilities;
 
-use mesh::Mesh;
+use mesh::mesh::Mesh;
 use renderer::Renderer;
 
 use crate::{renderer_config::RendererConfig, transformable::Transformable};
@@ -55,7 +56,7 @@ fn main() {
     let mut frame_timer = Instant::now();
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        // Update framesrate
+        // Update framerate
         let frame_duration = frame_timer.elapsed().as_secs_f32();
         let frame_rate = 1.0 / frame_duration;
         frame_timer = Instant::now();
@@ -66,21 +67,7 @@ fn main() {
         renderer.draw(&mesh);
 
         // Adapt to frame buffer
-        let src = renderer.get_colour_buffer_raw();
-        let dst = &mut buffer;
-        for y in 0..HEIGHT {
-            for x in 0..WIDTH {
-                let offset_dst = ((y * WIDTH) + x) as usize;
-                let offset_src = offset_dst * 4;
-
-                let r = src[offset_src] as u32;
-                let g = src[offset_src + 1] as u32;
-                let b = src[offset_src + 2] as u32;
-                let a = src[offset_src + 3] as u32;
-
-                dst[offset_dst] = (a << 24) + (r << 16) + (g << 8) + b;
-            }
-        }
+        frame_copy(renderer.get_colour_buffer_raw(), &mut buffer);
 
         // Save if S key is pressed
         if window.is_key_released(Key::S) {
@@ -94,6 +81,22 @@ fn main() {
         // Display
         window
             .update_with_buffer(&buffer, WIDTH as usize, HEIGHT as usize)
-            .unwrap();
+            .expect("Failed to update window");
     }
+}
+
+///
+fn frame_copy(src: &Vec<u8>, dst: &mut Vec<u32>) {
+    dst.par_iter_mut()
+        .enumerate()
+        .for_each(|(offset_dst, pixel)| {
+            let offset_src = offset_dst * 4;
+
+            let r = src[offset_src] as u32;
+            let g = src[offset_src + 1] as u32;
+            let b = src[offset_src + 2] as u32;
+            let a = src[offset_src + 3] as u32;
+
+            *pixel = (a << 24) + (r << 16) + (g << 8) + b;
+        });
 }

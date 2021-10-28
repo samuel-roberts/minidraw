@@ -28,7 +28,7 @@ impl Renderer {
             height: height,
             config: config,
             colour_buffer: RgbaImage::new(width, height),
-            depth_buffer: DepthImage::from_pixel(width, height, Luma([-1.0])),
+            depth_buffer: DepthImage::from_pixel(width, height, Luma([f32::NEG_INFINITY])),
             model_matrices: Vec::<Matrix4<f32>>::new(),
             view_matrices: Vec::<Matrix4<f32>>::new(),
             projection_matrices: Vec::<Matrix4<f32>>::new(),
@@ -236,7 +236,7 @@ impl Renderer {
                 if let Some(b) = utilities::barycentric(p0, p1, p2, p) {
                     if (b.x > 0.0) && (b.y > 0.0) && (b.z > 0.0) {
                         // Calculate the depth
-                        let depth = utilities::sigmoid((p0.z * b.x) + (p1.z * b.y) + (p2.z * b.z));
+                        let depth = (p0.z * b.x) + (p1.z * b.y) + (p2.z * b.z);
 
                         // Set pixel
                         let u = x as u32;

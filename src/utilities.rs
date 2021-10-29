@@ -34,11 +34,10 @@ pub fn barycentric(
     p2: Point3<f32>,
     p: Point3<f32>,
 ) -> Vector3<f32> {
-
     let v0 = p1 - p0;
     let v1 = p2 - p0;
     let v2 = p - p0;
-    
+
     let d00 = v0.dot(&v0);
     let d01 = v0.dot(&v1);
     let d11 = v1.dot(&v1);

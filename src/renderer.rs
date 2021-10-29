@@ -39,18 +39,27 @@ impl Renderer {
     }
 
     ///
+    #[inline]
     pub fn get_width(&self) -> u32 {
         self.width
     }
 
     ///
+    #[inline]
     pub fn get_height(&self) -> u32 {
         self.height
     }
 
     ///
+    #[inline]
     pub fn get_colour_buffer_raw(&self) -> &Vec<u8> {
         self.colour_buffer.as_raw()
+    }
+
+    ///
+    #[inline]
+    pub fn get_depth_buffer_raw(&self) -> &Vec<f32> {
+        self.depth_buffer.as_raw()
     }
 
     ///
@@ -62,16 +71,19 @@ impl Renderer {
     }
 
     ///
+    #[inline]
     pub fn get_model_matrix(&self) -> &Matrix4<f32> {
         self.model_matrices.last().unwrap_or(&self.identity_matrix)
     }
 
     ///
+    #[inline]
     pub fn get_view_matrix(&self) -> &Matrix4<f32> {
         self.view_matrices.last().unwrap_or(&self.identity_matrix)
     }
 
     ///
+    #[inline]
     pub fn get_projection_matrix(&self) -> &Matrix4<f32> {
         self.projection_matrices
             .last()
@@ -79,36 +91,42 @@ impl Renderer {
     }
 
     ///
+    #[inline]
     pub fn push_model_matrix(&mut self, mat: Matrix4<f32>) {
         self.model_matrices.push(mat);
         self.update_camera();
     }
 
     ///
+    #[inline]
     pub fn push_view_matrix(&mut self, mat: Matrix4<f32>) {
         self.view_matrices.push(mat);
         self.update_camera();
     }
 
     ///
+    #[inline]
     pub fn push_projection_matrix(&mut self, mat: Matrix4<f32>) {
         self.projection_matrices.push(mat);
         self.update_camera();
     }
 
     ///
+    #[inline]
     pub fn pop_model_matrix(&mut self) {
         self.model_matrices.pop();
         self.update_camera();
     }
 
     ///
+    #[inline]
     pub fn pop_view_matrix(&mut self) {
         self.view_matrices.pop();
         self.update_camera();
     }
 
     ///
+    #[inline]
     pub fn pop_projection_matrix(&mut self) {
         self.projection_matrices.pop();
         self.update_camera();
@@ -231,7 +249,7 @@ impl Renderer {
         // Calculate barycentric coordinate frame
         let b0 = p1 - p0;
         let b1 = p2 - p0;
-        
+
         let b00 = b0.dot(&b0);
         let b01 = b0.dot(&b1);
         let b11 = b1.dot(&b1);
@@ -240,7 +258,6 @@ impl Renderer {
         // Render
         for y in bb_min.y..=bb_max.y {
             for x in bb_min.x..=bb_max.x {
-            
                 // Screen-space coordinates of this pixel
                 let p = Point3::<f32>::new(x as f32, y as f32, 0.0);
 
@@ -256,10 +273,16 @@ impl Renderer {
                 };
 
                 // If this pixel is outside of the triangle, ignore it
-                if (b.x < 0.0) || (b.x > 1.0) || (b.y < 0.0) || (b.y > 1.0) || (b.z < 0.0) || (b.z > 1.0) {
+                if (b.x < 0.0)
+                    || (b.x > 1.0)
+                    || (b.y < 0.0)
+                    || (b.y > 1.0)
+                    || (b.z < 0.0)
+                    || (b.z > 1.0)
+                {
                     continue;
                 }
-                
+
                 // Calculate the depth
                 let depth = 1.0 / ((b.x / p0.z) + (b.y / p1.z) + (b.z / p2.z));
 
@@ -287,6 +310,7 @@ impl Renderer {
     }
 
     /// Convert from World to Screen coordinate system
+    #[inline]
     fn to_screen(&self, p: Point3<f32>) -> Point3<f32> {
         let transformed = self.model_view_projection_matrix.transform_point(&p);
         Point3::<f32>::new(

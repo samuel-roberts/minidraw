@@ -228,26 +228,47 @@ impl Renderer {
             |a| a,
         );
 
+        // Calculate barycentric coordinate frame
+        let b0 = p1 - p0;
+        let b1 = p2 - p0;
+        
+        let b00 = b0.dot(&b0);
+        let b01 = b0.dot(&b1);
+        let b11 = b1.dot(&b1);
+        let denominator = (b00 * b11) - (b01 * b01);
+
         // Render
-        for x in bb_min.x..=bb_max.x {
-            for y in bb_min.y..=bb_max.y {
-                
-                // Find the barycentric coordinates of this pixel
+        for y in bb_min.y..=bb_max.y {
+            for x in bb_min.x..=bb_max.x {
+            
+                // Screen-space coordinates of this pixel
                 let p = Point3::<f32>::new(x as f32, y as f32, 0.0);
-                let b = utilities::barycentric(p0, p1, p2, p);
 
-                if (b.x >= 0.0) && (b.y >= 0.0) && (b.z >= 0.0) && (b.x <= 1.0) && (b.y <= 1.0) && (b.z <= 1.0) {
-                    // Calculate the depth
-                    let depth = 1.0 / ((b.x / p0.z) + (b.y / p1.z) + (b.z / p2.z));
+                // Find the barycentric coordinates of this pixel
+                let b = {
+                    let b2 = p - p0;
+                    let b20 = b2.dot(&b0);
+                    let b21 = b2.dot(&b1);
+                    let by = ((b11 * b20) - (b01 * b21)) / denominator;
+                    let bz = ((b00 * b21) - (b01 * b20)) / denominator;
+                    let bx = 1.0 - by - bz;
+                    Vector3::<f32>::new(bx, by, bz)
+                };
 
-                    // Set pixel
-                    let u = x as u32;
-                    let v = y as u32;
+                // If this pixel is outside of the triangle, ignore it
+                if (b.x < 0.0) || (b.x > 1.0) || (b.y < 0.0) || (b.y > 1.0) || (b.z < 0.0) || (b.z > 1.0) {
+                    continue;
+                }
+                
+                // Calculate the depth
+                let depth = 1.0 / ((b.x / p0.z) + (b.y / p1.z) + (b.z / p2.z));
 
-                    if depth > self.depth_buffer.get_pixel(u, v)[0] {
-                        self.colour_buffer.put_pixel(u, v, colour);
-                        self.depth_buffer.put_pixel(u, v, Luma([depth]));
-                    }
+                // Set pixel
+                let (u, v) = (x as u32, y as u32);
+
+                if depth > self.depth_buffer.get_pixel(u, v)[0] {
+                    self.colour_buffer.put_pixel(u, v, colour);
+                    self.depth_buffer.put_pixel(u, v, Luma([depth]));
                 }
             }
         }

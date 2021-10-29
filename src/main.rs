@@ -42,8 +42,8 @@ fn main() {
     let projection = Matrix4::<f32>::new_perspective(
         (renderer.get_width() as f32) / (renderer.get_height() as f32),
         std::f32::consts::PI / 2.0,
-        1e-5,
-        1e5,
+        0.1,
+        10000.0,
     );
 
     renderer.push_view_matrix(view);

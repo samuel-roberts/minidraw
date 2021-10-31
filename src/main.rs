@@ -50,7 +50,7 @@ fn main() {
     renderer.push_projection_matrix(projection);
 
     // Load mesh
-    let mut mesh = Mesh::load_obj("models/calibration.obj").expect("Failed to load model");
+    let mut mesh = Mesh::load_obj("models/teapot.obj").expect("Failed to load model");
 
     let mut buffer: Vec<u32> = vec![0; (WIDTH * HEIGHT) as usize];
     let mut frame_timer = Instant::now();
@@ -76,6 +76,10 @@ fn main() {
             mesh.rotate(0.0, 0.0, std::f32::consts::PI * frame_duration);
         } else if window.is_key_down(Key::Left) {
             mesh.rotate(0.0, 0.0, -std::f32::consts::PI * frame_duration);
+        } else if window.is_key_down(Key::RightBracket) {
+            mesh.scale(1.0 + frame_duration);
+        } else if window.is_key_down(Key::LeftBracket) {
+            mesh.scale(1.0 - frame_duration);
         }
 
         // Display

@@ -113,6 +113,6 @@ impl Transformable for Mesh {
 
     ///
     fn scale(&mut self, factor: f32) {
-        todo!()
+        self.transform *= Matrix4::<f32>::new_scaling(factor);
     }
 }

@@ -17,6 +17,7 @@ pub struct Renderer {
     projection_matrices: Vec<Matrix4<f32>>,
     model_view_projection_matrix: Matrix4<f32>,
     camera_direction: Vector3<f32>,
+    camera_position: Point3<f32>,
     identity_matrix: Matrix4<f32>, // TODO Find a better way of doing this...
 }
 
@@ -34,6 +35,7 @@ impl Renderer {
             projection_matrices: Vec::<Matrix4<f32>>::new(),
             model_view_projection_matrix: Matrix4::<f32>::identity(),
             camera_direction: *Vector3::<f32>::z_axis(),
+            camera_position: Point3::<f32>::origin(),
             identity_matrix: Matrix4::<f32>::identity(),
         }
     }
@@ -212,8 +214,10 @@ impl Renderer {
         let normal = self.get_model_matrix().transform_vector(&n).normalize();
 
         // Calculate triangle visibility
-        let visibility = -self.camera_direction.dot(&normal);
-        if visibility < 0.0 {
+        let visibility0 = (self.get_model_matrix().transform_point(&p0) - self.camera_position).dot(&normal);
+        let visibility1 = (self.get_model_matrix().transform_point(&p1) - self.camera_position).dot(&normal);
+        let visibility2 = (self.get_model_matrix().transform_point(&p2) - self.camera_position).dot(&normal);
+        if (visibility0 < 0.0) && (visibility1 < 0.0) && (visibility2 < 0.0) {
             return;
         }
 
@@ -307,6 +311,12 @@ impl Renderer {
             .try_inverse()
             .unwrap()
             .transform_vector(&Vector3::<f32>::z_axis());
+
+        self.camera_position = self
+            .get_view_matrix()
+            .try_inverse()
+            .unwrap()
+            .transform_point(&Point3::<f32>::origin());
     }
 
     /// Convert from World to Screen coordinate system

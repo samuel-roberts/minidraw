@@ -2,7 +2,7 @@ use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
 use nalgebra::{Matrix4, Point3, Vector2, Vector3};
 use std::cmp;
 
-use crate::{drawable::Drawable, renderer_config::RendererConfig, utilities};
+use crate::{camera::Camera, drawable::Drawable, renderer_config::RendererConfig, utilities};
 
 type DepthImage = ImageBuffer<Luma<f32>, Vec<f32>>;
 
@@ -12,31 +12,26 @@ pub struct Renderer {
     config: RendererConfig,
     colour_buffer: RgbaImage,
     depth_buffer: DepthImage,
-    model_matrices: Vec<Matrix4<f32>>,
-    view_matrices: Vec<Matrix4<f32>>,
-    projection_matrices: Vec<Matrix4<f32>>,
-    model_view_projection_matrix: Matrix4<f32>,
-    camera_direction: Vector3<f32>,
-    camera_position: Point3<f32>,
-    identity_matrix: Matrix4<f32>, // TODO Find a better way of doing this...
+    camera: Camera,
 }
 
 impl Renderer {
     ///
     pub fn new(width: u32, height: u32, config: RendererConfig) -> Renderer {
+        let camera = Camera::new(
+            (width as f32) / (height as f32),
+            config.field_of_view,
+            0.1,
+            10000.0,
+        );
+
         Renderer {
             width: width,
             height: height,
             config: config,
             colour_buffer: RgbaImage::new(width, height),
             depth_buffer: DepthImage::from_pixel(width, height, Luma([f32::NEG_INFINITY])),
-            model_matrices: Vec::<Matrix4<f32>>::new(),
-            view_matrices: Vec::<Matrix4<f32>>::new(),
-            projection_matrices: Vec::<Matrix4<f32>>::new(),
-            model_view_projection_matrix: Matrix4::<f32>::identity(),
-            camera_direction: *Vector3::<f32>::z_axis(),
-            camera_position: Point3::<f32>::origin(),
-            identity_matrix: Matrix4::<f32>::identity(),
+            camera: camera,
         }
     }
 
@@ -50,6 +45,18 @@ impl Renderer {
     #[inline]
     pub fn get_height(&self) -> u32 {
         self.height
+    }
+
+    ///
+    #[inline]
+    pub fn get_camera(&self) -> &Camera {
+        &self.camera
+    }
+
+    ///
+    #[inline]
+    pub fn get_camera_mut(&mut self) -> &mut Camera {
+        &mut self.camera
     }
 
     ///
@@ -70,68 +77,6 @@ impl Renderer {
             Ok(_) => Ok(()),
             Err(_) => Err("Failed to save image"),
         }
-    }
-
-    ///
-    #[inline]
-    pub fn get_model_matrix(&self) -> &Matrix4<f32> {
-        self.model_matrices.last().unwrap_or(&self.identity_matrix)
-    }
-
-    ///
-    #[inline]
-    pub fn get_view_matrix(&self) -> &Matrix4<f32> {
-        self.view_matrices.last().unwrap_or(&self.identity_matrix)
-    }
-
-    ///
-    #[inline]
-    pub fn get_projection_matrix(&self) -> &Matrix4<f32> {
-        self.projection_matrices
-            .last()
-            .unwrap_or(&self.identity_matrix)
-    }
-
-    ///
-    #[inline]
-    pub fn push_model_matrix(&mut self, mat: Matrix4<f32>) {
-        self.model_matrices.push(mat);
-        self.update_camera();
-    }
-
-    ///
-    #[inline]
-    pub fn push_view_matrix(&mut self, mat: Matrix4<f32>) {
-        self.view_matrices.push(mat);
-        self.update_camera();
-    }
-
-    ///
-    #[inline]
-    pub fn push_projection_matrix(&mut self, mat: Matrix4<f32>) {
-        self.projection_matrices.push(mat);
-        self.update_camera();
-    }
-
-    ///
-    #[inline]
-    pub fn pop_model_matrix(&mut self) {
-        self.model_matrices.pop();
-        self.update_camera();
-    }
-
-    ///
-    #[inline]
-    pub fn pop_view_matrix(&mut self) {
-        self.view_matrices.pop();
-        self.update_camera();
-    }
-
-    ///
-    #[inline]
-    pub fn pop_projection_matrix(&mut self) {
-        self.projection_matrices.pop();
-        self.update_camera();
     }
 
     ///
@@ -210,13 +155,12 @@ impl Renderer {
         colour: Rgba<u8>,
     ) {
         // Get triangle normal
-        let n = (p2 - p0).cross(&(p1 - p0));
-        let normal = self.get_model_matrix().transform_vector(&n).normalize();
+        let normal = (p2 - p0).cross(&(p1 - p0)).normalize();
 
         // Calculate triangle visibility
-        let visibility0 = (self.get_model_matrix().transform_point(&p0) - self.camera_position).dot(&normal);
-        let visibility1 = (self.get_model_matrix().transform_point(&p1) - self.camera_position).dot(&normal);
-        let visibility2 = (self.get_model_matrix().transform_point(&p2) - self.camera_position).dot(&normal);
+        let visibility0 = (p0 - self.camera.get_position()).dot(&normal);
+        let visibility1 = (p1 - self.camera.get_position()).dot(&normal);
+        let visibility2 = (p2 - self.camera.get_position()).dot(&normal);
         if (visibility0 < 0.0) && (visibility1 < 0.0) && (visibility2 < 0.0) {
             return;
         }
@@ -301,28 +245,10 @@ impl Renderer {
         }
     }
 
-    ///
-    fn update_camera(&mut self) {
-        self.model_view_projection_matrix =
-            self.get_projection_matrix() * self.get_view_matrix() * self.get_model_matrix();
-
-        self.camera_direction = -self
-            .get_view_matrix()
-            .try_inverse()
-            .unwrap()
-            .transform_vector(&Vector3::<f32>::z_axis());
-
-        self.camera_position = self
-            .get_view_matrix()
-            .try_inverse()
-            .unwrap()
-            .transform_point(&Point3::<f32>::origin());
-    }
-
     /// Convert from World to Screen coordinate system
     #[inline]
     fn to_screen(&self, p: Point3<f32>) -> Point3<f32> {
-        let transformed = self.model_view_projection_matrix.transform_point(&p);
+        let transformed = self.camera.get_view_projection_matrix().transform_point(&p);
         Point3::<f32>::new(
             ((transformed.x + 1.0) / 2.0) * (self.get_width() as f32),
             ((transformed.y + 1.0) / 2.0) * (self.get_height() as f32),

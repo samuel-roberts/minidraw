@@ -73,27 +73,26 @@ impl Mesh {
 impl Drawable for Mesh {
     ///
     fn draw(&self, renderer: &mut Renderer) {
-        renderer.push_model_matrix(self.transform);
         for triangle in &self.geometry {
-            renderer.triangle(
-                triangle.a.position,
-                triangle.b.position,
-                triangle.c.position,
-                triangle.colour,
-            );
+            let a = self.transform.transform_point(&triangle.a.position);
+            let b = self.transform.transform_point(&triangle.b.position);
+            let c = self.transform.transform_point(&triangle.c.position);
+
+            renderer.triangle(a, b, c, triangle.colour);
         }
-        renderer.pop_model_matrix();
     }
 
     ///
     fn draw_wireframe(&self, renderer: &mut Renderer) {
-        renderer.push_model_matrix(self.transform);
         for triangle in &self.geometry {
+            let a = self.transform.transform_point(&triangle.a.position);
+            let b = self.transform.transform_point(&triangle.b.position);
+            let c = self.transform.transform_point(&triangle.c.position);
+
             renderer.line(triangle.a.position, triangle.b.position, triangle.colour);
             renderer.line(triangle.b.position, triangle.c.position, triangle.colour);
             renderer.line(triangle.c.position, triangle.a.position, triangle.colour);
         }
-        renderer.pop_model_matrix();
     }
 }
 

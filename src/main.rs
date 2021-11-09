@@ -5,6 +5,7 @@ use nalgebra::{Matrix4, Point3, Vector3};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 use std::time::Instant;
 
+mod camera;
 mod drawable;
 mod mesh;
 mod renderer;
@@ -33,21 +34,11 @@ fn main() {
     // Init renderer
     let config = RendererConfig::default();
     let mut renderer = Renderer::new(WIDTH, HEIGHT, config);
-
-    let view = Matrix4::<f32>::look_at_lh(
+    renderer.get_camera_mut().look_at(
         &Point3::<f32>::new(25.0, 25.0, 25.0),
         &Point3::<f32>::origin(),
         &Vector3::<f32>::z_axis(),
     );
-    let projection = Matrix4::<f32>::new_perspective(
-        (renderer.get_width() as f32) / (renderer.get_height() as f32),
-        std::f32::consts::PI / 2.0,
-        0.1,
-        10000.0,
-    );
-
-    renderer.push_view_matrix(view);
-    renderer.push_projection_matrix(projection);
 
     // Load mesh
     let mut mesh = Mesh::load_obj("models/teapot.obj").expect("Failed to load model");

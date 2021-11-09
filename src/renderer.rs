@@ -1,8 +1,11 @@
 use image::{ImageBuffer, Luma, Pixel, Rgba, RgbaImage};
-use nalgebra::{Matrix4, Point3, Vector2, Vector3};
+use nalgebra::{Point3, Vector2, Vector3};
 use std::cmp;
 
-use crate::{camera::Camera, drawable::Drawable, renderer_config::RendererConfig, utilities};
+use crate::{
+    camera::Camera, drawable::Drawable, mesh::triangle::Triangle, renderer_config::RendererConfig,
+    utilities,
+};
 
 type DepthImage = ImageBuffer<Luma<f32>, Vec<f32>>;
 
@@ -147,28 +150,24 @@ impl Renderer {
     }
 
     ///
-    pub fn triangle(
-        &mut self,
-        p0: Point3<f32>,
-        p1: Point3<f32>,
-        p2: Point3<f32>,
-        colour: Rgba<u8>,
-    ) {
+    pub fn triangle(&mut self, tri: &Triangle) {
         // Get triangle normal
-        let normal = (p2 - p0).cross(&(p1 - p0)).normalize();
+        let normal = (tri.c.position - tri.a.position)
+            .cross(&(tri.b.position - tri.a.position))
+            .normalize();
 
         // Calculate triangle visibility
-        let visibility0 = (p0 - self.camera.get_position()).dot(&normal);
-        let visibility1 = (p1 - self.camera.get_position()).dot(&normal);
-        let visibility2 = (p2 - self.camera.get_position()).dot(&normal);
+        let visibility0 = (tri.a.position - self.camera.get_position()).dot(&normal);
+        let visibility1 = (tri.b.position - self.camera.get_position()).dot(&normal);
+        let visibility2 = (tri.c.position - self.camera.get_position()).dot(&normal);
         if (visibility0 < 0.0) && (visibility1 < 0.0) && (visibility2 < 0.0) {
             return;
         }
 
         // Convert to screen-space
-        let p0 = self.to_screen(p0);
-        let p1 = self.to_screen(p1);
-        let p2 = self.to_screen(p2);
+        let p0 = self.to_screen(tri.a.position);
+        let p1 = self.to_screen(tri.b.position);
+        let p2 = self.to_screen(tri.c.position);
 
         // Find the screen-space bounding box of this triangle
         let mut bb_min = Vector2::<i32>::new((self.width - 1) as i32, (self.height - 1) as i32);
@@ -189,7 +188,7 @@ impl Renderer {
         // Calculate facet lighting
         let light_direction = Vector3::<f32>::new(-1.0, -0.5, -0.25).normalize();
         let lighting_intensity = normal.dot(&light_direction);
-        let colour = colour.map_with_alpha(
+        let colour = tri.colour.map_with_alpha(
             |c| utilities::clamp_f32((c as f32) * lighting_intensity, 0.0, 255.0) as u8,
             |a| a,
         );

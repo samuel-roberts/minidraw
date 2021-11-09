@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use minifb::{Key, Window, WindowOptions};
-use nalgebra::{Matrix4, Point3, Vector3};
+use nalgebra::Point3;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 use std::time::Instant;
 
@@ -34,11 +34,10 @@ fn main() {
     // Init renderer
     let config = RendererConfig::default();
     let mut renderer = Renderer::new(WIDTH, HEIGHT, config);
-    renderer.get_camera_mut().look_at(
-        &Point3::<f32>::new(25.0, 25.0, 25.0),
-        &Point3::<f32>::origin(),
-        &Vector3::<f32>::z_axis(),
-    );
+    renderer
+        .get_camera_mut()
+        .set_position(&Point3::<f32>::new(25.0, 25.0, 25.0));
+    renderer.get_camera_mut().look_at(&Point3::<f32>::origin());
 
     // Load mesh
     let mut mesh = Mesh::load_obj("models/teapot.obj").expect("Failed to load model");

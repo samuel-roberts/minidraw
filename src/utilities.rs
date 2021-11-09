@@ -1,5 +1,5 @@
 use image::Rgba;
-use nalgebra::{Point3, Vector2, Vector3};
+use nalgebra::{Point3, Vector3};
 use rand::Rng;
 use std::cmp;
 

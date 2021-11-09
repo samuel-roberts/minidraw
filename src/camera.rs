@@ -1,7 +1,8 @@
 use nalgebra::{Matrix4, Point3, Vector3};
 
+use crate::transformable::Transformable;
+
 pub struct Camera {
-    direction: Vector3<f32>,
     position: Point3<f32>,
     projection_matrix: Matrix4<f32>,
     view_matrix: Matrix4<f32>,
@@ -15,7 +16,6 @@ impl Camera {
             Matrix4::<f32>::new_perspective(aspect_ratio, field_of_view, z_near, z_far);
 
         let mut camera = Camera {
-            direction: *Vector3::<f32>::z_axis(),
             position: Point3::<f32>::origin(),
             projection_matrix: projection,
             view_matrix: Matrix4::<f32>::identity(),
@@ -33,9 +33,18 @@ impl Camera {
     }
 
     ///
-    #[inline]
-    pub fn get_direction(&self) -> &Vector3<f32> {
-        &self.direction
+    pub fn set_position(&mut self, position: &Point3<f32>) {
+        self.position = *position;
+        self.update_camera();
+    }
+
+    ///
+    pub fn get_direction(&self) -> Vector3<f32> {
+        -self
+            .view_matrix
+            .try_inverse()
+            .unwrap()
+            .transform_vector(&Vector3::<f32>::z_axis())
     }
 
     ///
@@ -45,25 +54,35 @@ impl Camera {
     }
 
     ///
-    pub fn look_at(&mut self, eye: &Point3<f32>, target: &Point3<f32>, up: &Vector3<f32>) {
-        self.view_matrix = Matrix4::<f32>::look_at_lh(eye, target, up);
+    pub fn look_at(&mut self, target: &Point3<f32>) {
+        self.view_matrix =
+            Matrix4::<f32>::look_at_lh(&self.position, target, &Vector3::<f32>::z_axis());
         self.update_camera();
     }
 
     ///
     fn update_camera(&mut self) {
         self.view_projection_matrix = self.projection_matrix * self.view_matrix;
+    }
+}
 
-        self.direction = -self
-            .view_matrix
-            .try_inverse()
-            .unwrap()
-            .transform_vector(&Vector3::<f32>::z_axis());
+impl Transformable for Camera {
+    ///
+    fn translate(&mut self, delta: Vector3<f32>) {
+        self.view_matrix *= Matrix4::<f32>::new_translation(&delta); // TODO Test
+    }
 
-        self.position = self
-            .view_matrix
-            .try_inverse()
-            .unwrap()
-            .transform_point(&Point3::<f32>::origin());
+    ///
+    fn rotate(&mut self, x: f32, y: f32, z: f32) {
+        let rot_x = Vector3::x() * x;
+        let rot_y = Vector3::y() * y;
+        let rot_z = Vector3::z() * z;
+        self.view_matrix *= Matrix4::<f32>::new_rotation(rot_x + rot_y + rot_z);
+        // TODO Test
+    }
+
+    ///
+    fn scale(&mut self, _: f32) {
+        self.update_camera();
     }
 }

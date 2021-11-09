@@ -74,24 +74,30 @@ impl Drawable for Mesh {
     ///
     fn draw(&self, renderer: &mut Renderer) {
         for triangle in &self.geometry {
-            let a = self.transform.transform_point(&triangle.a.position);
-            let b = self.transform.transform_point(&triangle.b.position);
-            let c = self.transform.transform_point(&triangle.c.position);
-
-            renderer.triangle(a, b, c, triangle.colour);
+            let transformed_triangle = triangle.transform(&self.transform);
+            renderer.triangle(&transformed_triangle);
         }
     }
 
     ///
     fn draw_wireframe(&self, renderer: &mut Renderer) {
         for triangle in &self.geometry {
-            let a = self.transform.transform_point(&triangle.a.position);
-            let b = self.transform.transform_point(&triangle.b.position);
-            let c = self.transform.transform_point(&triangle.c.position);
-
-            renderer.line(triangle.a.position, triangle.b.position, triangle.colour);
-            renderer.line(triangle.b.position, triangle.c.position, triangle.colour);
-            renderer.line(triangle.c.position, triangle.a.position, triangle.colour);
+            let transformed_triangle = triangle.transform(&self.transform);
+            renderer.line(
+                transformed_triangle.a.position,
+                transformed_triangle.b.position,
+                transformed_triangle.colour,
+            );
+            renderer.line(
+                transformed_triangle.b.position,
+                transformed_triangle.c.position,
+                transformed_triangle.colour,
+            );
+            renderer.line(
+                transformed_triangle.c.position,
+                transformed_triangle.a.position,
+                transformed_triangle.colour,
+            );
         }
     }
 }
@@ -99,7 +105,7 @@ impl Drawable for Mesh {
 impl Transformable for Mesh {
     ///
     fn translate(&mut self, delta: Vector3<f32>) {
-        todo!()
+        self.transform *= Matrix4::<f32>::new_translation(&delta);
     }
 
     ///
